@@ -6,7 +6,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-
+#include "action_msgs/srv/cancel_goal.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -23,6 +23,7 @@ public:
   using GoalHandle = rclcpp_action::ServerGoalHandle<StartDetection>;
   using SetConfidence = perception_interfaces::srv::SetConfidenceThreshold;
   using Detection = perception_interfaces::msg::Detection;
+  using CancelGoalSrv = action_msgs::srv::CancelGoal;
 
   PerceptionManager()
   : rclcpp::Node("perception_manager"),
@@ -63,6 +64,9 @@ public:
                 std::placeholders::_1, std::placeholders::_2),
       std::bind(&PerceptionManager::onCancel, this, std::placeholders::_1),
       std::bind(&PerceptionManager::onAccepted, this, std::placeholders::_1));
+    
+    self_cancel_client_ = this->create_client<CancelGoalSrv>(
+      "start_detection/_action/cancel_goal");
 
     RCLCPP_INFO(this->get_logger(),
                 "perception_manager ready (confidence_threshold = %.2f)",
@@ -114,7 +118,19 @@ private:
 
   void onAccepted(const std::shared_ptr<GoalHandle> goal_handle)
   {
-    // One worker thread per goal; it blocks until it is its turn to run.
+    {
+      std::lock_guard<std::mutex> lock(goal_mutex_);
+      if (active_goal_) {
+        RCLCPP_INFO(this->get_logger(),
+                    "Preempting active goal '%s' in favour of '%s'",
+                    active_goal_->get_goal()->target_class.c_str(),
+                    goal_handle->get_goal()->target_class.c_str());
+        auto request = std::make_shared<CancelGoalSrv::Request>();
+        request->goal_info.goal_id.uuid = active_goal_->get_goal_id();
+        self_cancel_client_->async_send_request(request,
+          [](rclcpp::Client<CancelGoalSrv>::SharedFuture) {});
+      }
+    }
     std::thread(&PerceptionManager::execute, this, goal_handle).detach();
   }
 
@@ -168,7 +184,7 @@ private:
       result->success = false;
       goal_handle->abort(result);
     }
-    finishGoal(target, "node shutdown");
+    finishGoal(target, "cancelled/preempted");
   }
 
   /// Release pipeline ownership and wake the next queued goal, if any.
@@ -211,6 +227,7 @@ private:
   rclcpp::Publisher<Detection>::SharedPtr detection_pub_;
   rclcpp::Service<SetConfidence>::SharedPtr set_confidence_srv_;
   rclcpp_action::Server<StartDetection>::SharedPtr action_server_;
+  rclcpp::Client<CancelGoalSrv>::SharedPtr self_cancel_client_;
   OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
 
   std::mutex goal_mutex_;
