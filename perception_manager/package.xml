@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>perception_manager</name>
+  <version>1.0.0</version>
+  <description>Robot Perception Manager nodes: detection pipeline and camera TF broadcaster.</description>
+  <maintainer email="your-email@example.com">Moses Maroun</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>action_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>perception_interfaces</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

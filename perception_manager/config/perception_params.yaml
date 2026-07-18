@@ -1,0 +1,8 @@
+/**/camera_tf_broadcaster:
+  ros__parameters:
+    tx: 0.15
+    ty: 0.0
+    tz: 0.40
+    roll: -1.5708
+    pitch: 0.0
+    yaw: -1.5708
