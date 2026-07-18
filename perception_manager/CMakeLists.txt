@@ -13,17 +13,23 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(perception_interfaces REQUIRED)
 
 add_executable(camera_tf_broadcaster_node src/camera_tf_broadcaster.cpp)
 ament_target_dependencies(camera_tf_broadcaster_node
   rclcpp geometry_msgs tf2 tf2_ros
 )
 
-install(TARGETS
-  camera_tf_broadcaster_node
-  DESTINATION lib/${PROJECT_NAME}
+add_executable(perception_manager_node src/perception_manager.cpp)
+ament_target_dependencies(perception_manager_node
+  rclcpp perception_interfaces
 )
 
+install(TARGETS
+  camera_tf_broadcaster_node
+  perception_manager_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
 )
