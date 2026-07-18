@@ -1,0 +1,7 @@
+string target_class
+---
+int32 total_detections
+bool success
+---
+float32 current_fps
+int32 detections_so_far
